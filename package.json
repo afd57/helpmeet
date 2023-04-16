@@ -1,7 +1,19 @@
 {
-  "name": "notepad",
-  "displayName": "notepad",
-  "description": "A sample extension that showcases the Webview UI Toolkit for VS Code alongside the VS Code TreeView and Webview API",
+  "name": "vavilov-dev-helper",
+  "displayName": "Vavilov Developer Helper",
+  "description": "A simple tool to store codes and files.",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "publisher": "afdagli",
+  "icon": "resources/brickwall-brick-svgrepo-com.svg",
+  "bugs": {
+      "url": "https://github.com/afd57/helpmeet/issues",
+      "email": "smcbreen@microsoft.com"
+  },
+  "homepage": "https://github.com/afd57/helpmeet",
+  "repository": {
+      "type": "git",
+      "url": "https://github.com/afd57/helpmeet.git"
+  },
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.74.0"
@@ -24,14 +36,19 @@
         "command": "notepad.deleteNote",
         "title": "Notepad: Delete note",
         "icon": "$(trash)"
+      },
+      {
+        "command": "notepad.run",
+        "title": "Run",
+        "icon": "$(play)"
       }
     ],
     "viewsContainers": {
       "activitybar": [
         {
           "id": "notepad",
-          "title": "Notepad",
-          "icon": "$(notebook)"
+          "title": "Vavilov",
+          "icon": "resources/brickwall-brick-svgrepo-com.svg"
         }
       ]
     },
@@ -60,7 +77,7 @@
       ],
       "view/item/context": [
         {
-          "command": "notepad.deleteNote",
+          "command": "notepad.run",
           "group": "inline"
         }
       ]

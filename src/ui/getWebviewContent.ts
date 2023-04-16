@@ -15,9 +15,80 @@ import { getNonce } from "../utilities/getNonce";
 export function getWebviewContent(webview: Webview, extensionUri: Uri, note: Note) {
   const webviewUri = getUri(webview, extensionUri, ["out", "webview.js"]);
   const styleUri = getUri(webview, extensionUri, ["out", "style.css"]);
-
   const nonce = getNonce();
-  const formattedTags = note.tags ? note.tags.join(", ") : null;
+  let helperForm = '';
+  let dropdownDisabled = false;
+
+  switch (note.helperType) {
+    case "Run Command": {
+      dropdownDisabled = true;
+      helperForm = `
+      <div id="run-command-div">
+        <section class="formSection">
+          <vscode-text-field id="command" value="${note.command}" placeholder="Enter Command">Command</vscode-text-field>
+          <vscode-text-field id="path-command" value="${note.path}" placeholder="Enter Run Path">Path</vscode-text-field>
+        </section>
+      </div>`;
+      break;
+    }
+    case "Change File": {
+      dropdownDisabled = true;
+      helperForm = `
+      <div id="change-file-div">
+        <section class="formSection">
+          <vscode-text-field id="change-file-path" value="${note.path}" placeholder="File Path">Changed File
+            Path</vscode-text-field>
+          <xmp>${(note.newFile ?? '')}</xmp>
+        </section>
+      </div>`;
+      break;
+    }
+    case "Run Script": {
+      dropdownDisabled = true;
+      helperForm = `
+      <div id="run-script-div" hidden">
+        <section class="formSection">
+          <vscode-text-field id="command" value="${note.command}" placeholder="Enter Command">Run
+            Command</vscode-text-field>
+          <vscode-text-field id="script-name" value="${note.scriptFileName}" placeholder="Enter Script Name">Script
+            Name</vscode-text-field>
+          <vscode-text-field id="path-command" value="${note.path}" placeholder="Enter Run Path">Path</vscode-text-field>
+          <vscode-text-area id="script-content" value="${note.scriptFile}" placeholder="Paste Script Here" resize="vertical"
+            rows=15>Script Code</vscode-text-area>
+        </section>
+      </div>`;
+      break;
+    }
+    default: {
+      helperForm =`
+      <div id="run-command-div" style="display:none;">
+      <section class="formSection">
+        <vscode-text-field id="command" value="${note.command}" placeholder="Enter Command">Command</vscode-text-field>
+        <vscode-text-field id="path-command" value="${note.path}" placeholder="Enter Run Path">Path</vscode-text-field>
+      </section>
+    </div>
+      <div id="change-file-div" style="display:none;">
+        <section class="formSection">
+          <vscode-text-field id="change-file-path" value="${note.path}" placeholder="Enter Command">Changed File
+            Path</vscode-text-field>
+          <vscode-text-area id="new-file-content" value="${note.newFile}" placeholder="Paste new file here" resize="vertical"
+            rows=15>New File</vscode-text-area>
+        </section>
+      </div>
+      <div id="run-script-div" hidden">
+        <section class="formSection">
+          <vscode-text-field id="command" value="${note.command}" placeholder="Enter Command">Run
+            Command</vscode-text-field>
+          <vscode-text-field id="script-name" value="${note.scriptFileName}" placeholder="Enter Script Name">Script
+            Name</vscode-text-field>
+          <vscode-text-field id="path-command" value="${note.path}" placeholder="Enter Run Path">Path</vscode-text-field>
+          <vscode-text-area id="script-content" value="${note.scriptFile}" placeholder="Paste Script Here" resize="vertical"
+            rows=15>Script Code</vscode-text-area>
+        </section>
+      </div>`;
+      break;
+    }
+  } 
 
   webview.onDidReceiveMessage((message) => {
     const command = message.command;
@@ -32,28 +103,44 @@ export function getWebviewContent(webview: Webview, extensionUri: Uri, note: Not
   });
 
   return /*html*/ `
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
-          <link rel="stylesheet" href="${styleUri}">
-          <title>${note.title}</title>
-      </head>
-      <body id="webview-body">
-        <header>
-          <h1>${note.title}</h1>
-          <div id="tags-container"></div>
-        </header>
-        <section id="notes-form">
-          <vscode-text-field id="title" value="${note.title}" placeholder="Enter a name">Title</vscode-text-field>
-          <vscode-text-area id="content"value="${note.content}" placeholder="Write your heart out, Shakespeare!" resize="vertical" rows=15>Note</vscode-text-area>
-          <vscode-text-field id="tags-input" value="${formattedTags}" placeholder="Add tags separated by commas">Tags</vscode-text-field>
-          <vscode-button id="submit-button">Save</vscode-button>
+  <!DOCTYPE html>
+  <html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
+    <link rel="stylesheet" href="${styleUri}">
+    <title>${note.title}</title>
+  </head>
+
+  <body id="webview-body">
+    <header>
+      <h1>${note.title}</h1>
+    </header>
+
+    <div id="html-div">
+      <section class="formSection">
+        <section class="formSection">
+          <vscode-dropdown id="dropdown" value="${note.helperType}" ${dropdownDisabled ? "disabled" : ""}>
+            <vscode-option>Run Command</vscode-option>
+            <vscode-option>Change File</vscode-option>
+            <vscode-option>Run Script</vscode-option>
+          </vscode-dropdown>
+          <vscode-text-field id="title" value="${
+            note.title
+          }" placeholder="Enter helper title">Title</vscode-text-field>
         </section>
-        <script type="module" nonce="${nonce}" src="${webviewUri}"></script>
-      </body>
-    </html>
-  `;
+        ${helperForm}
+        <div id="row-rev" class="content">
+          <vscode-button id="delete-button" appearance="secondary">Delete</vscode-button>
+          <vscode-button id="submit-button">Save</vscode-button>
+        </div>
+      </section>
+    </div>
+    <script type="module" nonce="${nonce}" src="${webviewUri}"></script>
+  </body>
+
+  </html>`;
 }

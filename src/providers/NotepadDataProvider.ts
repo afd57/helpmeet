@@ -20,12 +20,12 @@ export class NotepadDataProvider implements TreeDataProvider<NotepadNote> {
   data: NotepadNote[];
 
   constructor(notesData: Note[]) {
-    this.data = notesData.map((note) => new NotepadNote(note.id, note.title));
+    this.data = notesData.map((note) => new NotepadNote(note.id, note.title, note.helperType));
   }
 
   refresh(notesData: Note[]): void {
     this._onDidChangeTreeData.fire();
-    this.data = notesData.map((note) => new NotepadNote(note.id, note.title));
+    this.data = notesData.map((note) => new NotepadNote(note.id, note.title, note.helperType));
   }
 
   getTreeItem(element: NotepadNote): TreeItem | Thenable<TreeItem> {
@@ -44,15 +44,23 @@ export class NotepadDataProvider implements TreeDataProvider<NotepadNote> {
   }
 }
 
+
+let typeMap = new Map<string, string>([
+  ["Run Command","console"],
+  ["Change File","file-code"],
+  ["Run Script","test-view-icon"]
+]);
+
+
 class NotepadNote extends TreeItem {
   children?: NotepadNote[];
 
-  constructor(noteId: string, noteTitle: string) {
-    super(noteTitle);
+  constructor(noteId: string, title: string, helperType: string) {
+    super(title);
     this.id = noteId;
-    this.iconPath = new ThemeIcon("note");
+    this.iconPath = new ThemeIcon(typeMap.get(helperType) ?? "file");
     this.command = {
-      title: "Open note",
+      title: "Open Helper",
       command: "notepad.showNoteDetailView",
     };
   }

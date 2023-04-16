@@ -1,12 +1,36 @@
-import { commands, ExtensionContext, WebviewPanel, window, ViewColumn, Uri } from "vscode";
+import { commands, ExtensionContext, WebviewPanel, window, ViewColumn, Uri, workspace, WorkspaceEdit } from "vscode";
 import { v4 as uuidv4 } from "uuid";
 import { NotepadDataProvider } from "./providers/NotepadDataProvider";
 import { getWebviewContent } from "./ui/getWebviewContent";
-import { Note } from "./types/Note";
+import { Note, Helper } from "./types/Note";
+import * as fs from 'fs';
+import * as path from 'path';
+
+
 
 export function activate(context: ExtensionContext) {
   let notes: Note[] = [];
+
   let panel: WebviewPanel | undefined = undefined;
+  const globalStorageUri = context.globalStorageUri;
+  const globalStoragePath = globalStorageUri.fsPath;
+  const filePath = `${globalStoragePath}/my-extension-data.txt`;
+
+  if (!fs.existsSync(globalStoragePath)) {
+    fs.mkdirSync(globalStoragePath);
+  }
+
+  // Check if the data file exists
+  if (fs.existsSync(filePath)) {
+    // Read the data file
+    const data = fs.readFileSync(filePath, "utf8");
+    window.showInformationMessage(`My extension data: ${data}`);
+    notes = JSON.parse(data);
+  } else {
+    // Write some data to the file
+    fs.writeFileSync(filePath, "Hello from my extension!", "utf8");
+    window.showInformationMessage("My extension data file created.");
+  }
 
   const notepadDataProvider = new NotepadDataProvider(notes);
 
@@ -43,6 +67,7 @@ export function activate(context: ExtensionContext) {
     panel.webview.onDidReceiveMessage((message) => {
       const command = message.command;
       const note = message.note;
+      console.log('---------------------');
       switch (command) {
         case "updateNote":
           const updatedNoteId = note.id;
@@ -50,11 +75,16 @@ export function activate(context: ExtensionContext) {
           const matchingNoteIndex = copyOfNotesArray.findIndex((note) => note.id === updatedNoteId);
           copyOfNotesArray[matchingNoteIndex] = note;
           notes = copyOfNotesArray;
+          console.log(notes);
+          fs.writeFileSync(filePath, JSON.stringify(notes), "utf8");
           notepadDataProvider.refresh(notes);
           panel
             ? ((panel.title = note.title),
               (panel.webview.html = getWebviewContent(panel.webview, context.extensionUri, note)))
             : null;
+          break;
+        case "deleteNote":
+          deleteNoteCallBack(note);
           break;
       }
     });
@@ -75,28 +105,63 @@ export function activate(context: ExtensionContext) {
 
     const newNote: Note = {
       id: id,
-      title: "New note",
-      content: "",
-      tags: ["Personal"],
+      title: "New Helper",
+      helperType: "",
+      path: "",
+      command: "",
+      newFile: "",
+      scriptFile: "",
+      scriptFileName: "",
     };
 
     notes.push(newNote);
     notepadDataProvider.refresh(notes);
   });
 
+  
+  const runCommand = commands.registerCommand("notepad.run", (node: Note) => {
+    const selectedTreeViewItem = node;
+    const selectedHelperIndex = notes.findIndex((note) => note.id === selectedTreeViewItem.id);
+    const helperData = notes[selectedHelperIndex];
+    
+    switch (helperData.helperType) {
+      case "Change File":
+        console.log("Change File Command");
+        if (helperData.newFile && workspace.workspaceFolders?.length) {
+          const wsedit = new WorkspaceEdit();
+          const wsPath = workspace.workspaceFolders[0].uri.fsPath;
+          const filePath = Uri.file(path.join(wsPath, helperData.path));
+          window.showInformationMessage(filePath.toString());
+          fs.writeFileSync(filePath.fsPath, helperData.newFile)
+        }
+        break;
+      case "Run Command":
+        let t = window.createTerminal();
+        t.show();
+        t.sendText(`${helperData.command}`); // new line
+        break;
+      case "Run Script":
+        console.log("Run Script");
+        break;
+    }
+  });
+
   // Command to delete a given note
-  const deleteNote = commands.registerCommand("notepad.deleteNote", (node: Note) => {
+  function deleteNoteCallBack(node: Note) {
     const selectedTreeViewItem = node;
     const selectedNoteIndex = notes.findIndex((note) => note.id === selectedTreeViewItem.id);
     notes.splice(selectedNoteIndex, 1);
+    fs.writeFileSync(filePath, JSON.stringify(notes), "utf8");
     notepadDataProvider.refresh(notes);
 
     // Close the panel if it's open
     panel?.dispose();
-  });
+  }
+  const deleteNote = commands.registerCommand("notepad.deleteNote", deleteNoteCallBack);
 
   // Add commands to the extension context
   context.subscriptions.push(openNote);
+  context.subscriptions.push(runCommand);
   context.subscriptions.push(createNote);
   context.subscriptions.push(deleteNote);
 }
