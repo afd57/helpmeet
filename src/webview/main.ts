@@ -55,6 +55,7 @@ function main() {
   // to the element (i.e. the `as Button` syntax)
   const saveButton = document.getElementById("submit-button") as Button;
   const deleteButton = document.getElementById("delete-button") as Button;
+
   saveButton.addEventListener("click", () => {
     saveNote();
   });
@@ -73,10 +74,14 @@ function main() {
 let openedNote;
 
 function setVSCodeMessageListener() {
+  const newFileContent = document.getElementById("new-file-content") as TextArea;
+  
   window.addEventListener("message", (event) => {
     const command = event.data.command;
     const noteData = JSON.parse(event.data.payload);
-
+    if(newFileContent){
+      newFileContent.value = noteData.newFile ?? '';
+    }
     switch (command) {
       case "receiveDataInWebview":
         openedNote = noteData;

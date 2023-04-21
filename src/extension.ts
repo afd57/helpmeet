@@ -67,7 +67,6 @@ export function activate(context: ExtensionContext) {
     panel.webview.onDidReceiveMessage((message) => {
       const command = message.command;
       const note = message.note;
-      console.log('---------------------');
       switch (command) {
         case "updateNote":
           const updatedNoteId = note.id;
@@ -123,22 +122,29 @@ export function activate(context: ExtensionContext) {
     const selectedTreeViewItem = node;
     const selectedHelperIndex = notes.findIndex((note) => note.id === selectedTreeViewItem.id);
     const helperData = notes[selectedHelperIndex];
-    
+
     switch (helperData.helperType) {
       case "Change File":
         console.log("Change File Command");
         if (helperData.newFile && workspace.workspaceFolders?.length) {
-          const wsedit = new WorkspaceEdit();
           const wsPath = workspace.workspaceFolders[0].uri.fsPath;
           const filePath = Uri.file(path.join(wsPath, helperData.path));
-          window.showInformationMessage(filePath.toString());
-          fs.writeFileSync(filePath.fsPath, helperData.newFile)
+          window.showInformationMessage(`${filePath.toString()} is changed.`);
+          fs.writeFileSync(filePath.fsPath, helperData.newFile);
+        } else {
+          window.showErrorMessage(`Please open a workspaced to use extension.`);
         }
         break;
       case "Run Command":
-        let t = window.createTerminal();
-        t.show();
-        t.sendText(`${helperData.command}`); // new line
+        if (workspace.workspaceFolders?.length) {
+          const wsPath = workspace.workspaceFolders[0].uri.fsPath;
+          const cwd = Uri.file(path.join(wsPath, helperData.path));
+          let t = window.createTerminal({ cwd: cwd });
+          t.show();
+          t.sendText(`${helperData.command}`); // new line
+        } else {
+          window.showErrorMessage(`Please open a workspaced to use extension.`);
+        }
         break;
       case "Run Script":
         console.log("Run Script");

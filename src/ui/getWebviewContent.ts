@@ -38,7 +38,8 @@ export function getWebviewContent(webview: Webview, extensionUri: Uri, note: Not
         <section class="formSection">
           <vscode-text-field id="change-file-path" value="${note.path}" placeholder="File Path">Changed File
             Path</vscode-text-field>
-          <xmp>${(note.newFile ?? '')}</xmp>
+          <vscode-text-area id="new-file-content" placeholder="Paste new file here" resize="vertical"
+          rows=15>New File</vscode-text-area>
         </section>
       </div>`;
       break;
