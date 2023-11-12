@@ -32,6 +32,15 @@ Vavilov is a Visual Studio Code extension designed to simplify the execution of 
 5. After adding items, click the "Play" button next to an item to execute the command or replace the modified file.
 
 
+### Change File
+
+https://github.com/afd57/helpmeet/assets/1831424/61430f35-5635-44ee-a58e-fede723edaad
+
+
+### Run Command
+https://github.com/afd57/helpmeet/assets/1831424/9381a6e7-b18c-47c3-9fd5-1086d3a383b1
+
+
 ## Issues and Contributions
 
 If you encounter any issues or have suggestions for improvement, please [submit an issue](https://github.com/afd57/helpmeet). Contributions are welcome!
