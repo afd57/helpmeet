@@ -14,7 +14,7 @@
       "type": "git",
       "url": "https://github.com/afd57/helpmeet.git"
   },
-  "version": "0.0.7",
+  "version": "0.0.8",
   "engines": {
     "vscode": "^1.74.0"
   },
@@ -29,7 +29,7 @@
     "commands": [
       {
         "command": "notepad.createNote",
-        "title": "Notepad: Create a note",
+        "title": "Add",
         "icon": "$(add)"
       },
       {
