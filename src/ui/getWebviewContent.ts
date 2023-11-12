@@ -3,22 +3,16 @@ import { Note } from "../types/Note";
 import { getUri } from "../utilities/getUri";
 import { getNonce } from "../utilities/getNonce";
 
-/**
- * Defines and returns the HTML that should be rendered within a notepad note view (aka webview panel).
- *
- * @param webview A reference to the extension webview
- * @param extensionUri The URI of the directory containing the extension
- * @param note An object representing a notepad note
- * @returns A template string literal containing the HTML that should be
- * rendered within the webview panel
- */
-export function getWebviewContent(webview: Webview, extensionUri: Uri, note: Note) {
+
+
+
+function getHtmlContent(webview: Webview, extensionUri: Uri, note: Note): string {
   const webviewUri = getUri(webview, extensionUri, ["out", "webview.js"]);
   const styleUri = getUri(webview, extensionUri, ["out", "style.css"]);
   const nonce = getNonce();
-  let helperForm = '';
-  let dropdownDisabled = false;
 
+  let helperForm = "";
+  let dropdownDisabled = false;
   switch (note.helperType) {
     case "Run Command": {
       dropdownDisabled = true;
@@ -61,7 +55,7 @@ export function getWebviewContent(webview: Webview, extensionUri: Uri, note: Not
       break;
     }
     default: {
-      helperForm =`
+      helperForm = `
       <div id="run-command-div" style="display:none;">
       <section class="formSection">
         <vscode-text-field id="command" value="${note.command}" placeholder="Enter Command">Command</vscode-text-field>
@@ -89,20 +83,7 @@ export function getWebviewContent(webview: Webview, extensionUri: Uri, note: Not
       </div>`;
       break;
     }
-  } 
-
-  webview.onDidReceiveMessage((message) => {
-    const command = message.command;
-    switch (command) {
-      case "requestNoteData":
-        webview.postMessage({
-          command: "receiveDataInWebview",
-          payload: JSON.stringify(note),
-        });
-        break;
-    }
-  });
-
+  }
   return /*html*/ `
   <!DOCTYPE html>
   <html lang="en">
@@ -122,19 +103,21 @@ export function getWebviewContent(webview: Webview, extensionUri: Uri, note: Not
     </header>
 
     <div id="html-div">
+    <form id=view-form>
       <section class="formSection">
         <section class="formSection">
           <vscode-dropdown id="dropdown" value="${note.helperType}" ${dropdownDisabled ? "disabled" : ""}>
             <vscode-option>Run Command</vscode-option>
             <vscode-option>Change File</vscode-option>
-            <vscode-option>Run Script</vscode-option>
           </vscode-dropdown>
           <vscode-text-field id="title" value="${
             note.title
           }" placeholder="Enter helper title">Title</vscode-text-field>
         </section>
-        ${helperForm}
+          ${helperForm}
+        </form>
         <div id="row-rev" class="content">
+          <vscode-button id="discard-button" appearance="secondary">Discard Changes</vscode-button>
           <vscode-button id="delete-button" appearance="secondary">Delete</vscode-button>
           <vscode-button id="submit-button">Save</vscode-button>
         </div>
@@ -144,4 +127,33 @@ export function getWebviewContent(webview: Webview, extensionUri: Uri, note: Not
   </body>
 
   </html>`;
+}
+/**
+ * Defines and returns the HTML that should be rendered within a notepad note view (aka webview panel).
+ *
+ * @param webview A reference to the extension webview
+ * @param extensionUri The URI of the directory containing the extension
+ * @param note An object representing a notepad note
+ * @returns A template string literal containing the HTML that should be
+ * rendered within the webview panel
+ */
+export function getWebviewContent(webview: Webview, extensionUri: Uri, note: Note) {
+  const webviewUri = getUri(webview, extensionUri, ["out", "webview.js"]);
+  const styleUri = getUri(webview, extensionUri, ["out", "style.css"]);
+  const nonce = getNonce();
+
+  webview.onDidReceiveMessage((message) => {
+    const command = message.command;
+    switch (command) {
+      case "requestNoteData":
+        webview.postMessage({
+          command: "receiveDataInWebview",
+          payload: JSON.stringify(note),
+        });
+        break;
+    }
+  });
+
+  return getHtmlContent(webview, extensionUri, note);
+
 }

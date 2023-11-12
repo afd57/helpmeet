@@ -24,11 +24,16 @@ export function activate(context: ExtensionContext) {
   if (fs.existsSync(filePath)) {
     // Read the data file
     const data = fs.readFileSync(filePath, "utf8");
-    window.showInformationMessage(`My extension data: ${data}`);
-    notes = JSON.parse(data);
+    window.showInformationMessage(`The Vavilov Extension Data is stored locally at the specified ${filePath}.`);
+    try {
+      notes = JSON.parse(data);
+    } catch (error) {
+      // create empty file
+      fs.writeFileSync(filePath, "", "utf8");
+    }
   } else {
     // Write some data to the file
-    fs.writeFileSync(filePath, "Hello from my extension!", "utf8");
+    fs.writeFileSync(filePath, "", "utf8");
     window.showInformationMessage("My extension data file created.");
   }
 
@@ -44,6 +49,7 @@ export function activate(context: ExtensionContext) {
   const openNote = commands.registerCommand("notepad.showNoteDetailView", () => {
     const selectedTreeViewItem = treeView.selection[0];
     const matchingNote = notes.find((note) => note.id === selectedTreeViewItem.id);
+    let newTab = false;
     if (!matchingNote) {
       window.showErrorMessage("No matching note found");
       return;
@@ -51,6 +57,7 @@ export function activate(context: ExtensionContext) {
 
     // If no panel is open, create a new one and update the HTML
     if (!panel) {
+      newTab = true;
       panel = window.createWebviewPanel("noteDetailView", matchingNote.title, ViewColumn.One, {
         // Enable JavaScript in the webview
         enableScripts: true,

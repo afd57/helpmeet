@@ -46,7 +46,9 @@ const typeMap = {
 
 function main() {
   setVSCodeMessageListener();
-  vscode.postMessage({ command: "requestNoteData" });
+  const tmpData = window.localStorage.getItem(`vavilov`);
+  vscode.postMessage({ command: "requestNoteData", tmpData: tmpData });
+
   const dropdown = document.getElementById("dropdown") as Dropdown;
   changeType(dropdown);
 
@@ -55,15 +57,25 @@ function main() {
   // to the element (i.e. the `as Button` syntax)
   const saveButton = document.getElementById("submit-button") as Button;
   const deleteButton = document.getElementById("delete-button") as Button;
+  const discardButton = document.getElementById("discard-button") as Button;
+  const form = document.querySelector('form') as any;
+
+  form.addEventListener("input", (e:any) => {
+    saveNote(true);
+  });
 
   saveButton.addEventListener("click", () => {
-    saveNote();
+    saveNote(false);
   });
 
   deleteButton.addEventListener("click", () => {
     deleteNote();
   });
 
+  discardButton.addEventListener("click", () => {
+    window.localStorage.removeItem(`vavilov_${openedNote.id}`);
+    recoveredTmpData();
+  });
 
   dropdown.addEventListener("change", () => {
     changeType(dropdown);
@@ -82,9 +94,11 @@ function setVSCodeMessageListener() {
     if(newFileContent){
       newFileContent.value = noteData.newFile ?? '';
     }
+
     switch (command) {
       case "receiveDataInWebview":
         openedNote = noteData;
+        recoveredTmpData();
         break;
     }
   });
@@ -103,7 +117,7 @@ function changeType(dropdown:Dropdown) {
   noteType.style.display = "block";
 }
 
-function saveNote() {
+function saveNote(localStorage: boolean) {
   const titleInput = document.getElementById("title") as TextField;
   const command = document.getElementById("command") as TextField;
   const changeFilePath = document.getElementById("change-file-path") as TextField;
@@ -111,11 +125,11 @@ function saveNote() {
   const commandPath = document.getElementById("path-command") as TextArea;
   const noteType = document.getElementById("dropdown") as Dropdown;
 
-  const titleInputValue = titleInput?.value;
-  const commandValue = command?.value;
-  const commandPathValue = commandPath?.value === "" ? null : commandPath?.value;
-  const changeFilePathValue = changeFilePath?.value;
-  const newFileContentValue = newFileContent?.value;
+  const titleInputValue = titleInput?.value ?? "";
+  const commandValue = command?.value ?? "";
+  const commandPathValue = commandPath?.value ?? "";
+  const changeFilePathValue = changeFilePath?.value ?? "";
+  const newFileContentValue = newFileContent?.value ?? "";
 
   const noteTypeValue = noteType?.value;
   console.log(noteTypeValue);
@@ -125,14 +139,18 @@ function saveNote() {
     id: openedNote.id,
     title: titleInputValue,
     helperType: noteTypeValue,
-    path: commandPathValue ?? changeFilePathValue,
+    path: commandPathValue === "" ? changeFilePathValue: commandPathValue,
     command: commandValue,
     newFile: newFileContentValue,
     scriptFile: '',
     
   };
 
-  vscode.postMessage({ command: "updateNote", note: noteToUpdate });
+  if(!localStorage){
+    vscode.postMessage({ command: "updateNote", note: noteToUpdate });
+  } else {
+    window.localStorage.setItem(`vavilov_${openedNote.id}`, JSON.stringify(noteToUpdate));
+  }
 }
 
 function deleteNote() {
@@ -143,16 +161,26 @@ function deleteNote() {
   vscode.postMessage({ command: "deleteNote", note: noteToUpdate });
 }
 
-function clearTagGroup(tagsContainer) {
-  while (tagsContainer.firstChild) {
-    tagsContainer.removeChild(tagsContainer.lastChild);
-  }
-}
+function recoveredTmpData(){
+  const titleInput = document.getElementById("title") as TextField;
+  const command = document.getElementById("command") as TextField;
+  const changeFilePath = document.getElementById("change-file-path") as TextField;
+  const newFileContent = document.getElementById("new-file-content") as TextArea;
+  const commandPath = document.getElementById("path-command") as TextArea;
+  const noteType = document.getElementById("dropdown") as Dropdown;
 
-function addTagsToTagGroup(tags, tagsContainer) {
-  for (const tagString of tags) {
-    const vscodeTag = document.createElement("vscode-tag") as Tag;
-    vscodeTag.textContent = tagString;
-    tagsContainer.appendChild(vscodeTag);
+  const tmpData = window.localStorage.getItem(`vavilov_${openedNote.id}`);
+  const tmpDataJson = tmpData ? JSON.parse(tmpData) : openedNote;
+  const recoveredData = tmpDataJson;
+  
+  if (recoveredData) {
+    document.title = document.title + "*";
+    const pathValue = recoveredData?.path as string;
+    titleInput ? titleInput.value = recoveredData?.title ?? '' : '';
+    command ? command.value = recoveredData?.command ?? '' : '';
+    changeFilePath ? changeFilePath.value = pathValue : '';
+    commandPath ? commandPath.value = pathValue : '';
+    newFileContent ? newFileContent.value = recoveredData?.newFile ?? '' : '';
+    noteType ? noteType.value = recoveredData?.helperType ?? '': '';
   }
 }

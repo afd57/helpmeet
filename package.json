@@ -4,7 +4,7 @@
   "description": "A simple tool to store codes and files.",
   "license": "SEE LICENSE IN LICENSE.md",
   "publisher": "afdagli",
-  "icon": "resources/brickwall-brick-svgrepo-com.svg",
+  "icon": "resources/brickwall-brick-svgrepo-com.png",
   "bugs": {
       "url": "https://github.com/afd57/helpmeet/issues",
       "email": "smcbreen@microsoft.com"
@@ -14,7 +14,7 @@
       "type": "git",
       "url": "https://github.com/afd57/helpmeet.git"
   },
-  "version": "0.0.1",
+  "version": "0.0.7",
   "engines": {
     "vscode": "^1.74.0"
   },
@@ -79,7 +79,8 @@
       "view/item/context": [
         {
           "command": "notepad.run",
-          "group": "inline"
+          "group": "inline",
+          "when": "view == notepad.notesList"
         }
       ]
     }
